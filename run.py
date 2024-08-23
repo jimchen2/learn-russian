@@ -15,28 +15,40 @@ S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
 S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
 S3_BUCKET = os.getenv('S3_BUCKET')
 
-def generate_unique_filename(prefix):
-    return f"{prefix}_{uuid.uuid4().hex}_{int(time.time())}"
+def get_original_filename(url):
+    result = subprocess.run(['yt-dlp', '--get-filename', url], capture_output=True, text=True)
+    return result.stdout.strip()
 
 def download_video(url):
-    output = f"{generate_unique_filename('video')}.mp4"
-    subprocess.run(['yt-dlp', '-o', output, url])
-    return output
+    temp_filename = f"temp_{uuid.uuid4().hex}"
+    subprocess.run([
+        'yt-dlp',
+        '-o', temp_filename,
+        '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+        '-N', '10',
+        url
+    ])
+    return temp_filename
+
+def transcode_to_mp4(input_file):
+    output_file = f"{os.path.splitext(input_file)[0]}.mp4"
+    subprocess.run(['ffmpeg', '-i', input_file, '-c:v', 'libx264', '-c:a', 'aac', output_file])
+    os.remove(input_file)
+    return output_file
 
 def transcribe_video(video_file, language):
-    output = f"{generate_unique_filename('subs')}_{language}.srt"
+    output = f"subs_{uuid.uuid4().hex}_{language}.srt"
     subprocess.run(['whisper', video_file, '--model', 'base', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
 def hardcode_subtitles(video_file, subtitle_file):
-    output = f"{generate_unique_filename('subtitled')}.mp4"
+    output = f"subtitled_{uuid.uuid4().hex}.mp4"
     subprocess.run(['ffmpeg', '-hwaccel', 'cuda', '-i', video_file, '-vf', f"subtitles={subtitle_file}", '-c:v', 'h264_nvenc', '-c:a', 'copy', output])
     return output
 
-def upload_to_s3(file_name, bucket, object_name=None):
-    if object_name is None:
-        object_name = os.path.basename(file_name)
+def upload_to_s3(file_name, bucket, original_filename, prefix='processed_video_'):
+    object_name = f"{prefix}{original_filename}"
 
     s3_client = boto3.client('s3',
                              endpoint_url=S3_ENDPOINT,
@@ -45,7 +57,7 @@ def upload_to_s3(file_name, bucket, object_name=None):
 
     try:
         s3_client.upload_file(file_name, bucket, object_name)
-        print(f"Upload Successful: {file_name}")
+        print(f"Upload Successful: {object_name}")
         return True
     except FileNotFoundError:
         print(f"The file {file_name} was not found")
@@ -64,23 +76,29 @@ def cleanup_files(*files):
 
 def process_video(url):
     try:
+        # Get the original filename that yt-dlp would use
+        original_filename = get_original_filename(url)
+        
         # Step 1: Download video
-        video_file = download_video(url)
+        downloaded_video = download_video(url)
         
-        # Step 2: Transcribe to English
-        english_subs = transcribe_video(video_file, 'en')
+        # Step 2: Transcode to MP4
+        mp4_video = transcode_to_mp4(downloaded_video)
         
-        # Step 3: Transcribe to Russian
-        russian_subs = transcribe_video(video_file, 'ru')
+        # Step 3: Transcribe to English
+        english_subs = transcribe_video(mp4_video, 'en')
         
-        # Step 4: Hardcode English subtitles
-        subtitled_video = hardcode_subtitles(video_file, english_subs)
+        # Step 4: Transcribe to Russian
+        russian_subs = transcribe_video(mp4_video, 'ru')
         
-        # Step 5: Upload to S3
-        upload_to_s3(subtitled_video, S3_BUCKET)
+        # Step 5: Hardcode English subtitles
+        subtitled_video = hardcode_subtitles(mp4_video, english_subs)
+        
+        # Step 6: Upload to S3
+        upload_to_s3(subtitled_video, S3_BUCKET, original_filename)
         
         # Clean up
-        cleanup_files(video_file, english_subs, russian_subs, subtitled_video)
+        cleanup_files(mp4_video, english_subs, russian_subs, subtitled_video)
         
         print(f"Successfully processed and uploaded: {url}")
     except Exception as e:
