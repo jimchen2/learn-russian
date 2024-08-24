@@ -43,9 +43,14 @@ def transcribe_video(video_file, language):
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
-def hardcode_subtitles(video_file, subtitle_file):
+
+def hardcode_dual_subtitles(video_file, english_subs, russian_subs):
     output = f"subtitled_{uuid.uuid4().hex}.mp4"
-    subprocess.run(['ffmpeg', '-hwaccel', 'cuda', '-i', video_file, '-vf', f"subtitles={subtitle_file}", '-c:v', 'h264_nvenc', '-c:a', 'copy', output])
+    subprocess.run([
+        'ffmpeg', '-hwaccel', 'cuda', '-i', video_file,
+        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=60',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14'",
+        '-c:v', 'h264_nvenc', '-c:a', 'copy', output
+    ])
     return output
 
 def upload_to_s3(file_name, bucket, original_filename):
@@ -92,8 +97,8 @@ def process_video(url):
         # Step 4: Transcribe to Russian
         russian_subs = transcribe_video(mp4_video, 'ru')
         
-        # Step 5: Hardcode English subtitles
-        subtitled_video = hardcode_subtitles(mp4_video, english_subs)
+        # Step 5: Hardcode dual subtitles
+        subtitled_video = hardcode_dual_subtitles(mp4_video, english_subs, russian_subs)
         
         # Step 6: Upload to S3
         upload_to_s3(subtitled_video, S3_BUCKET, original_filename)
