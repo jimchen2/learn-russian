@@ -14,6 +14,7 @@ S3_ENDPOINT = os.getenv('S3_ENDPOINT')
 S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
 S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
 S3_BUCKET = os.getenv('S3_BUCKET')
+S3_PREFIX = os.getenv('S3_PREFIX', 'processed_video_') 
 
 def get_filename_and_extension(url):
     result = subprocess.run(['yt-dlp', '--get-filename', url], capture_output=True, text=True)
@@ -38,7 +39,7 @@ def transcode_to_mp4(input_file):
 
 def transcribe_video(video_file, language):
     output = f"subs_{uuid.uuid4().hex}_{language}.srt"
-    subprocess.run(['whisper', video_file, '--model', 'base', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
+    subprocess.run(['whisper', video_file, '--model', 'large', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
@@ -47,8 +48,8 @@ def hardcode_subtitles(video_file, subtitle_file):
     subprocess.run(['ffmpeg', '-hwaccel', 'cuda', '-i', video_file, '-vf', f"subtitles={subtitle_file}", '-c:v', 'h264_nvenc', '-c:a', 'copy', output])
     return output
 
-def upload_to_s3(file_name, bucket, original_filename, prefix='processed_video_'):
-    object_name = f"{prefix}{original_filename}"
+def upload_to_s3(file_name, bucket, original_filename):
+    object_name = f"{S3_PREFIX}{original_filename}"
 
     s3_client = boto3.client('s3',
                              endpoint_url=S3_ENDPOINT,
@@ -65,7 +66,7 @@ def upload_to_s3(file_name, bucket, original_filename, prefix='processed_video_'
     except NoCredentialsError:
         print("Credentials not available")
         return False
-
+    
 def cleanup_files(*files):
     for file in files:
         try:
