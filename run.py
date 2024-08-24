@@ -23,6 +23,11 @@ def download_video(url, extension):
     return temp_filename
 
 def transcode_to_mp4(input_file):
+    # Check if the input file is already an MP4
+    if input_file.lower().endswith('.mp4'):
+        print(f"File {input_file} is already an MP4. Skipping transcoding.")
+        return input_file
+
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
     probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
                                      '-count_packets', '-show_entries', 'stream=width,height', 
@@ -55,7 +60,7 @@ def transcode_to_mp4(input_file):
     
     subprocess.run(command)
     os.remove(input_file)
-    print(output_file)
+    print(f"Transcoded to {output_file}")
     return output_file
 
 def process_and_upload_video(url):
