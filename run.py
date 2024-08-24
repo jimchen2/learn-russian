@@ -49,7 +49,7 @@ def hardcode_subtitles(video_file, subtitle_file):
     return output
 
 def upload_to_s3(file_name, bucket, original_filename):
-    object_name = f"{S3_PREFIX}/{original_filename}"
+    object_name = f"{S3_PREFIX}/{original_filename}.mp4"
 
     s3_client = boto3.client('s3',
                              endpoint_url=S3_ENDPOINT,
