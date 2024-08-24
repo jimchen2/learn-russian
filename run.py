@@ -67,23 +67,23 @@ def transcode_to_mp4(input_file):
     return output_file
 
 def transcribe_video(video_file, language):
-    output = f"subs_{uuid.uuid4().hex}_{language}.ass"
+    output = f"subs_{uuid.uuid4().hex}_{language}.vtt"
     subprocess.run([
         'whisper', 
         video_file, 
         '--model', 'medium', 
         '--language', language, 
-        '--output_format', 'ass',  # Changed to ASS format
+        '--output_format', 'vtt',  # Changed to VTT format
         '--output_dir', '.', 
     ])
-    os.rename(f"{os.path.splitext(video_file)[0]}.ass", output)
+    os.rename(f"{os.path.splitext(video_file)[0]}.vtt", output)
     return output
 
 def hardcode_dual_subtitles(video_file, english_subs, russian_subs):
     output = f"subtitled_{uuid.uuid4().hex}.mp4"
     subprocess.run([
         'ffmpeg', '-hwaccel', 'cuda', '-i', video_file,
-        '-vf', f"ass={russian_subs},ass={english_subs}",  # Changed to use ASS
+        '-vf', f"subtitles={russian_subs},subtitles={english_subs}",  # Changed to use VTT
         '-c:v', 'h264_nvenc', '-c:a', 'copy', output
     ])
     return output
