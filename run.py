@@ -82,15 +82,25 @@ def process_and_upload_video(url):
             # Step 6: Upload to S3
             print(subtitled_video)
             upload_to_s3(subtitled_video)
-            os.remove(subtitled_video)
             print(f"Successfully uploaded: {original_filename}")
         
-
-        os.remove(russian_subs)
+        # Clean up temporary files
+        if os.path.exists(mp4_video):
+            os.remove(mp4_video)
+        if os.path.exists(russian_subs):
+            os.remove(russian_subs)
+        if os.path.exists(translated_subs):
+            os.remove(translated_subs)
+        if os.path.exists(subtitled_video):
+            os.remove(subtitled_video)
         
     except Exception as e:
         print(f"Error processing and uploading {url}: {e}")
-
+    finally:
+        # Ensure downloaded_video is always removed, even if an exception occurs
+        if 'downloaded_video' in locals() and os.path.exists(downloaded_video):
+            os.remove(downloaded_video)
+            
 def main():
     urls_file = 'video_urls.txt'  # Name of the file containing video URLs
     video_urls = read_urls_from_file(urls_file)

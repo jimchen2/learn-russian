@@ -3,3 +3,6 @@ pip install yt-dlp boto3 uuid python-dotenv transformers openai-whisper sentence
 
 
 cd ~ && git clone https://github.com/jimchen2/whisper-video-s3 && cd ~/whisper-video-s3 
+
+# use this to stop errors
+# export MKL_THREADING_LAYER=GNU

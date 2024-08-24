@@ -1,13 +1,20 @@
 import uuid
+import torch
 from transformers import MarianMTModel, MarianTokenizer
+
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 # Load Helsinki NLP model
 model_name = 'Helsinki-NLP/opus-mt-ru-en'
 tokenizer = MarianTokenizer.from_pretrained(model_name)
-model = MarianMTModel.from_pretrained(model_name)
+model = MarianMTModel.from_pretrained(model_name).to(device)
 
 def translate_text(text):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    # Move input tensors to the same device as the model
+    inputs = {k: v.to(device) for k, v in inputs.items()}
     translated = model.generate(**inputs)
     return tokenizer.decode(translated[0], skip_special_tokens=True)
 
