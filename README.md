@@ -1,5 +1,7 @@
 ## Configure `.env`
 
+See `~/.config/rclone/rclone.conf`
+
 
 ## Dependencies(on Ubuntu)
 
