@@ -31,7 +31,6 @@ def download_video(url, extension):
     ])
     return temp_filename
 
-
 def transcode_to_mp4(input_file):
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
     probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
@@ -68,24 +67,23 @@ def transcode_to_mp4(input_file):
     return output_file
 
 def transcribe_video(video_file, language):
-    output = f"subs_{uuid.uuid4().hex}_{language}.srt"
+    output = f"subs_{uuid.uuid4().hex}_{language}.ass"
     subprocess.run([
         'whisper', 
         video_file, 
         '--model', 'medium', 
         '--language', language, 
-        '--output_format', 'srt', 
+        '--output_format', 'ass',  # Changed to ASS format
         '--output_dir', '.', 
     ])
-    os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
+    os.rename(f"{os.path.splitext(video_file)[0]}.ass", output)
     return output
-
 
 def hardcode_dual_subtitles(video_file, english_subs, russian_subs):
     output = f"subtitled_{uuid.uuid4().hex}.mp4"
     subprocess.run([
         'ffmpeg', '-hwaccel', 'cuda', '-i', video_file,
-        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=30,MarginH=0',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14,MarginH=0'",
+        '-vf', f"ass={russian_subs},ass={english_subs}",  # Changed to use ASS
         '-c:v', 'h264_nvenc', '-c:a', 'copy', output
     ])
     return output

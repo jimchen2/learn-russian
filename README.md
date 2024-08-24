@@ -2,6 +2,7 @@
 
 See `~/.config/rclone/rclone.conf`
 
+## Configure `video_urls.txt`
 
 ## Dependencies(on Ubuntu)
 
