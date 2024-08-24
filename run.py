@@ -6,6 +6,7 @@ from s3_operations import upload_to_s3
 from transcription import transcribe_video
 from translation import translate_vtt
 from utils import read_urls_from_file, get_filename_and_extension, cleanup_files
+from write_subtitles import process_video
 
 # Load environment variables from .env file
 load_dotenv()
@@ -54,15 +55,16 @@ def transcode_to_mp4(input_file):
     
     subprocess.run(command)
     os.remove(input_file)
+    print(output_file)
     return output_file
 
-def process_video(url):
+def process_and_upload_video(url):
     try:
         # Get the original filename that yt-dlp would use
         original_filename, extension = get_filename_and_extension(url)
 
         # Step 1: Download video
-        downloaded_video = download_video(url,extension)
+        downloaded_video = download_video(url, extension)
         
         # Step 2: Transcode to MP4
         mp4_video = transcode_to_mp4(downloaded_video)
@@ -73,22 +75,25 @@ def process_video(url):
         # Step 4: Translate Russian VTT to English and combine
         translated_subs = translate_vtt(russian_subs)
         
-        # Step 5: Upload to S3
-        upload_to_s3(translated_subs, os.getenv('S3_BUCKET'), original_filename)
+        # Step 5: Process video (add subtitles)
+        subtitled_video = process_video(mp4_video, translated_subs, original_filename)
         
-        # Clean up
-        cleanup_files(mp4_video, russian_subs, translated_subs)
+        if subtitled_video:
+            # Step 6: Upload to S3
+            print(subtitled_video)
+            upload_to_s3(subtitled_video)
+            os.remove(subtitled_video)
+            print(f"Successfully uploaded: {original_filename}")
         
-        print(f"Successfully processed and uploaded: {url}")
     except Exception as e:
-        print(f"Error processing {url}: {e}")
+        print(f"Error processing and uploading {url}: {e}")
 
 def main():
     urls_file = 'video_urls.txt'  # Name of the file containing video URLs
     video_urls = read_urls_from_file(urls_file)
     
     for url in video_urls:
-        process_video(url)
+        process_and_upload_video(url)
 
 if __name__ == "__main__":
     main()

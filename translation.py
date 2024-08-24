@@ -13,16 +13,27 @@ def translate_text(text):
 
 def translate_vtt(vtt_file):
     translated_vtt = f"translated_{uuid.uuid4().hex}.vtt"
-    
+
     with open(vtt_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
+
     with open(translated_vtt, 'w', encoding='utf-8') as f:
-        for line in lines:
-            if line.strip() and not line.strip().replace('->', '').isdigit() and not line.startswith('WEBVTT'):
-                translated_line = translate_text(line.strip())
-                f.write(f"{line.strip()} [{translated_line}]\n")
+        f.write("WEBVTT\n\n")
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if '-->' in line:  # This is a timestamp line
+                f.write(line + '\n')
+                i += 1
+                text_lines = []
+                while i < len(lines) and lines[i].strip() and not '-->' in lines[i]:
+                    text_lines.append(lines[i].strip())
+                    i += 1
+                original_text = ' '.join(text_lines)
+                translated_text = translate_text(original_text)
+                f.write(original_text + '\n')
+                f.write(translated_text + '\n\n')
             else:
-                f.write(line)
-    
+                i += 1
+
     return translated_vtt
