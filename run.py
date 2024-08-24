@@ -50,10 +50,16 @@ def transcode_to_mp4(input_file):
     # Construct FFmpeg command
     command = [
         'ffmpeg',
+        '-hwaccel', 'cuda',  # Use CUDA hardware acceleration
         '-i', input_file,
         '-vf', f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2',
-        '-c:v', 'libx264',
-        '-crf', '23',
+        '-c:v', 'h264_nvenc',  # Use NVIDIA NVENC encoder
+        '-preset', 'p4',  # Fastest preset for NVENC
+        '-tune', 'hq',  # High quality tuning
+        '-b:v', '5M',  # Set a target bitrate (adjust as needed)
+        '-maxrate', '10M',  # Maximum bitrate
+        '-bufsize', '15M',  # VBV buffer size
+        '-c:a', 'copy',  # Copy audio without re-encoding
         output_file
     ]
     
