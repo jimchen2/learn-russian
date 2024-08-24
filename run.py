@@ -38,7 +38,6 @@ def transcode_to_mp4(input_file):
         '-hwaccel', 'cuda', 
         '-i', input_file, 
         '-vf', 'pad=width=iw:height=iw*9/16:x=(ow-iw)/2:y=(oh-ih)/2:color=black',
-        '-c:v', 'h264_nvenc', 
         output_file
     ])
     os.remove(input_file)
@@ -46,7 +45,16 @@ def transcode_to_mp4(input_file):
 
 def transcribe_video(video_file, language):
     output = f"subs_{uuid.uuid4().hex}_{language}.srt"
-    subprocess.run(['whisper', video_file, '--model', 'medium', '--language', language, '--output_format', 'srt', '--output_dir', '.', '--max_line_width', '50'])
+    subprocess.run([
+        'whisper', 
+        video_file, 
+        '--model', 'medium', 
+        '--language', language, 
+        '--output_format', 'srt', 
+        '--output_dir', '.', 
+        '--word_timestamps', 'True',
+        '--max_line_width', '40'
+    ])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
