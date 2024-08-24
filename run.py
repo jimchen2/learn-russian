@@ -33,13 +33,20 @@ def download_video(url, extension):
 
 def transcode_to_mp4(input_file):
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
-    subprocess.run(['ffmpeg', '-hwaccel', 'cuda', '-i', input_file, output_file])
+    subprocess.run([
+        'ffmpeg', 
+        '-hwaccel', 'cuda', 
+        '-i', input_file, 
+        '-vf', 'pad=width=iw:height=iw*9/16:x=(ow-iw)/2:y=(oh-ih)/2:color=black',
+        '-c:v', 'h264_nvenc', 
+        output_file
+    ])
     os.remove(input_file)
     return output_file
 
 def transcribe_video(video_file, language):
     output = f"subs_{uuid.uuid4().hex}_{language}.srt"
-    subprocess.run(['whisper', video_file, '--model', 'medium', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
+    subprocess.run(['whisper', video_file, '--model', 'medium', '--language', language, '--output_format', 'srt', '--output_dir', '.', '--max_line_width', '50'])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
@@ -48,7 +55,7 @@ def hardcode_dual_subtitles(video_file, english_subs, russian_subs):
     output = f"subtitled_{uuid.uuid4().hex}.mp4"
     subprocess.run([
         'ffmpeg', '-hwaccel', 'cuda', '-i', video_file,
-        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=60',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14'",
+        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=30',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14'",
         '-c:v', 'h264_nvenc', '-c:a', 'copy', output
     ])
     return output
