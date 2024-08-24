@@ -39,7 +39,7 @@ def transcode_to_mp4(input_file):
 
 def transcribe_video(video_file, language):
     output = f"subs_{uuid.uuid4().hex}_{language}.srt"
-    subprocess.run(['whisper', video_file, '--model', 'large', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
+    subprocess.run(['whisper', video_file, '--model', 'medium', '--language', language, '--output_format', 'srt', '--output_dir', '.'])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
 
