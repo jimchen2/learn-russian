@@ -31,15 +31,33 @@ def download_video(url, extension):
     ])
     return temp_filename
 
+
 def transcode_to_mp4(input_file):
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
-    subprocess.run([
-        'ffmpeg', 
-        '-hwaccel', 'cuda', 
-        '-i', input_file, 
-        '-vf', 'pad=width=iw:height=iw*9/16:x=(ow-iw)/2:y=(oh-ih)/2:color=black',
+    probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
+                                     '-count_packets', '-show_entries', 'stream=width,height', 
+                                     '-of', 'csv=p=0', input_file]).decode('utf-8').strip().split(',')
+    width, height = map(int, probe)
+
+    # Calculate target dimensions
+    target_height = height
+    target_width = height * 16 // 9
+    
+    if target_width < width:
+        target_width = width
+        target_height = width * 9 // 16
+
+    # Construct FFmpeg command
+    command = [
+        'ffmpeg',
+        '-i', input_file,
+        '-vf', f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2',
+        '-c:v', 'libx264',
+        '-crf', '23',
         output_file
-    ])
+    ]
+    
+    subprocess.run(command)
     os.remove(input_file)
     return output_file
 
@@ -52,8 +70,6 @@ def transcribe_video(video_file, language):
         '--language', language, 
         '--output_format', 'srt', 
         '--output_dir', '.', 
-        '--word_timestamps', 'True',
-        '--max_line_width', '40'
     ])
     os.rename(f"{os.path.splitext(video_file)[0]}.srt", output)
     return output
@@ -63,7 +79,7 @@ def hardcode_dual_subtitles(video_file, english_subs, russian_subs):
     output = f"subtitled_{uuid.uuid4().hex}.mp4"
     subprocess.run([
         'ffmpeg', '-hwaccel', 'cuda', '-i', video_file,
-        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=30',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14'",
+        '-vf', f"subtitles={russian_subs}:force_style='Alignment=2,MarginV=30,MarginH=0',subtitles={english_subs}:force_style='Alignment=2,MarginV=10,FontSize=14,MarginH=0'",
         '-c:v', 'h264_nvenc', '-c:a', 'copy', output
     ])
     return output
