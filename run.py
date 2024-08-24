@@ -1,6 +1,8 @@
 import os
 import subprocess
 import uuid
+import argparse
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from s3_operations import upload_to_s3
 from transcription import transcribe_video
@@ -105,13 +107,17 @@ def process_and_upload_video(url):
         # Ensure downloaded_video is always removed, even if an exception occurs
         if 'downloaded_video' in locals() and os.path.exists(downloaded_video):
             os.remove(downloaded_video)
-            
+
 def main():
+    parser = argparse.ArgumentParser(description="Process and upload videos with multithreading.")
+    parser.add_argument('-t', '--threads', type=int, default=1, help="Number of threads to use (default: 1)")
+    args = parser.parse_args()
+
     urls_file = 'video_urls.txt'  # Name of the file containing video URLs
     video_urls = read_urls_from_file(urls_file)
     
-    for url in video_urls:
-        process_and_upload_video(url)
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        executor.map(process_and_upload_video, video_urls)
 
 if __name__ == "__main__":
     main()

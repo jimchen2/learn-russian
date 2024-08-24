@@ -23,7 +23,7 @@ git clone https://github.com/jimchen2/whisper-video-s3
 
 
 cd ~/whisper-video-s3 
-python run.py
+python run.py -t 1
 ```
 
 ## Installing ffmpeg
