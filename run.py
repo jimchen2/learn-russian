@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from s3_operations import upload_to_s3
 from transcription import transcribe_video
 from translation import translate_vtt
-from utils import read_urls_from_file, get_filename_and_extension, cleanup_files
+from utils import read_urls_from_file, get_filename_and_extension
 from write_subtitles import process_video
 
 # Load environment variables from .env file
@@ -17,7 +17,7 @@ def download_video(url, extension):
         'yt-dlp',
         '-o', temp_filename,
         '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-        '-N', '10',
+        '-N', '100',
         url
     ])
     return temp_filename
@@ -84,6 +84,9 @@ def process_and_upload_video(url):
             upload_to_s3(subtitled_video)
             os.remove(subtitled_video)
             print(f"Successfully uploaded: {original_filename}")
+        
+
+        os.remove(russian_subs)
         
     except Exception as e:
         print(f"Error processing and uploading {url}: {e}")

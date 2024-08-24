@@ -25,3 +25,8 @@ jq 'select(.live_status == "was_live") | .id' -r |
 sed 's_^_https://youtu.be/_'
 
 
+# sort by views
+ yt-dlp -j --flat-playlist "https://www.youtube.com/@anthropic-ai" | 
+                   jq -r 'select(.view_count != null) | "\(.view_count) https://youtu.be/\(.id)"' | 
+                   sort -rn | 
+                   cut -d' ' -f2-
