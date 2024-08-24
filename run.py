@@ -15,12 +15,12 @@ S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
 S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
 S3_BUCKET = os.getenv('S3_BUCKET')
 
-def get_original_filename(url):
+def get_filename_and_extension(url):
     result = subprocess.run(['yt-dlp', '--get-filename', url], capture_output=True, text=True)
-    return result.stdout.strip()
+    return os.path.splitext(result.stdout.strip())
 
-def download_video(url):
-    temp_filename = f"temp_{uuid.uuid4().hex}"
+def download_video(url, extension):
+    temp_filename = f"temp_{uuid.uuid4().hex}"+extension
     subprocess.run([
         'yt-dlp',
         '-o', temp_filename,
@@ -32,7 +32,7 @@ def download_video(url):
 
 def transcode_to_mp4(input_file):
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
-    subprocess.run(['ffmpeg', '-i', input_file, '-c:v', 'libx264', '-c:a', 'aac', output_file])
+    subprocess.run(['ffmpeg', '-hwaccel', 'cuda', '-i', input_file, output_file])
     os.remove(input_file)
     return output_file
 
@@ -77,10 +77,10 @@ def cleanup_files(*files):
 def process_video(url):
     try:
         # Get the original filename that yt-dlp would use
-        original_filename = get_original_filename(url)
-        
+        original_filename, extension = get_filename_and_extension(url)
+
         # Step 1: Download video
-        downloaded_video = download_video(url)
+        downloaded_video = download_video(url,extension)
         
         # Step 2: Transcode to MP4
         mp4_video = transcode_to_mp4(downloaded_video)
