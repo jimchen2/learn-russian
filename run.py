@@ -98,9 +98,6 @@ def transcode_to_mp4(input_file):
         '-c:v', 'h264_nvenc',
         '-preset', 'p4',
         '-tune', 'hq',
-        '-b:v', '5M',
-        '-maxrate', '10M',
-        '-bufsize', '15M',
         '-c:a', 'aac',
         '-b:a', '128k'
     ]
