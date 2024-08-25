@@ -10,38 +10,36 @@ from translation import translate_vtt
 from utils import read_urls_from_file, get_filename_and_extension
 from write_subtitles import process_video
 import re
+import glob
 
 # Load environment variables from .env file
 load_dotenv()
 
 def download_video(url):
-    
-    # Run yt-dlp and capture its output
+    # Generate a UUID
+    file_uuid = uuid.uuid4().hex
+
+    # Run yt-dlp with the UUID as part of the filename
     process = subprocess.Popen([
         'yt-dlp',
         '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
         '-N', '20',
+        '-o', f'{file_uuid}.%(ext)s',
         url
     ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-
-    actual_filename = None
-    for line in process.stdout:
-        match = re.search(r'\[download\] Destination: (.+)', line)
-        if match:
-            actual_filename = match.group(1)
-            break
-
+        
     process.wait()
 
-    # Extract the extension
-    _, ext = os.path.splitext(actual_filename)
-    
-    # Generate a new UUID for the filename
-    new_filename = f"{uuid.uuid4().hex}{ext}"
-    
-    # Rename the file
-    os.rename(actual_filename, new_filename)
-    return new_filename
+    # Search for the file with the UUID in the current directory
+    matching_files = glob.glob(f'{file_uuid}.*')
+
+    if matching_files:
+        downloaded_file = matching_files[0]
+        print(f"File downloaded: {downloaded_file}")
+        return downloaded_file
+    else:
+        print("File not found after download.")
+        return None
     
     
 def transcode_to_mp4(input_file):
@@ -90,11 +88,17 @@ def process_and_upload_video(url):
         # Get the original filename that yt-dlp would use
         original_filename, _ = get_filename_and_extension(url)
 
+        print(original_filename)
+
         # Step 1: Download video
         downloaded_video = download_video(url)
+
+        print(downloaded_video)
         
         # Step 2: Transcode to MP4
         mp4_video = transcode_to_mp4(downloaded_video)
+
+        print(mp4_video)
         
         # Step 3: Transcribe to Russian
         russian_subs = transcribe_video(mp4_video)
@@ -135,23 +139,10 @@ def main():
     args = parser.parse_args()
 
     urls_file = 'video_urls.txt'  # Name of the file containing video URLs
-    video_urls = read_urls_from_file(urls_file)
-    
-    error_urls = []
+    video_urls = list(set(line.strip() for line in open(urls_file) if line.strip()))   
+     
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        results = executor.map(process_and_upload_video, video_urls)
-        for result in results:
-            if result:  # If a URL is returned, it means an error occurred
-                error_urls.append(result)
-    
-    # Write error URLs to a file
-    if error_urls:
-        with open('error_urls.txt', 'w') as f:
-            for url in error_urls:
-                f.write(f"{url}\n")
-        print(f"URLs with errors have been written to error_urls.txt")
-    else:
-        print("All URLs processed successfully")
+        executor.map(process_and_upload_video, video_urls)
 
 if __name__ == "__main__":
     main()
