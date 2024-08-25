@@ -9,21 +9,41 @@ from transcription import transcribe_video
 from translation import translate_vtt
 from utils import read_urls_from_file, get_filename_and_extension
 from write_subtitles import process_video
+import re
 
 # Load environment variables from .env file
 load_dotenv()
 
-def download_video(url, extension):
-    temp_filename = f"temp_{uuid.uuid4().hex}"+extension
-    subprocess.run([
+def download_video(url):
+    
+    # Run yt-dlp and capture its output
+    process = subprocess.Popen([
         'yt-dlp',
-        '-o', temp_filename,
         '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-        '-N', '100',
+        '-N', '20',
         url
-    ])
-    return temp_filename
+    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
+    actual_filename = None
+    for line in process.stdout:
+        match = re.search(r'\[download\] Destination: (.+)', line)
+        if match:
+            actual_filename = match.group(1)
+            break
+
+    process.wait()
+
+    # Extract the extension
+    _, ext = os.path.splitext(actual_filename)
+    
+    # Generate a new UUID for the filename
+    new_filename = f"{uuid.uuid4().hex}{ext}"
+    
+    # Rename the file
+    os.rename(actual_filename, new_filename)
+    return new_filename
+    
+    
 def transcode_to_mp4(input_file):
     # Check if the input file is already an MP4
     if input_file.lower().endswith('.mp4'):
@@ -68,10 +88,10 @@ def transcode_to_mp4(input_file):
 def process_and_upload_video(url):
     try:
         # Get the original filename that yt-dlp would use
-        original_filename, extension = get_filename_and_extension(url)
+        original_filename, _ = get_filename_and_extension(url)
 
         # Step 1: Download video
-        downloaded_video = download_video(url, extension)
+        downloaded_video = download_video(url)
         
         # Step 2: Transcode to MP4
         mp4_video = transcode_to_mp4(downloaded_video)
