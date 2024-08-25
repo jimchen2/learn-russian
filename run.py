@@ -15,20 +15,40 @@ import glob
 # Load environment variables from .env file
 load_dotenv()
 
+
 def download_video(url):
     # Generate a UUID
     file_uuid = uuid.uuid4().hex
+    print(f"Generated UUID: {file_uuid}")
 
     # Run yt-dlp with the UUID as part of the filename
-    process = subprocess.Popen([
+
+    command = [
         'yt-dlp',
-        '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+        '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
         '-N', '20',
-        '-o', f'{file_uuid}.%(ext)s',
+        "-o", f"{file_uuid}.%(ext)s",
         url
-    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        
+    ]
+    print(f"Executing command: {' '.join(command)}")
+
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True
+    )
+    
+    # Print output in real-time
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print(output.strip())
+
     process.wait()
+    print(f"yt-dlp process completed with return code: {process.returncode}")
 
     # Search for the file with the UUID in the current directory
     matching_files = glob.glob(f'{file_uuid}.*')
@@ -39,8 +59,7 @@ def download_video(url):
         return downloaded_file
     else:
         print("File not found after download.")
-        return None
-    
+        return None    
     
 def transcode_to_mp4(input_file):
     # Check if the input file is already an MP4
@@ -59,15 +78,22 @@ def transcode_to_mp4(input_file):
     fps = eval(fps)  # r_frame_rate is returned as a fraction, e.g., '30000/1001'
 
     # Calculate target dimensions
-    target_height = height
-    target_width = height * 16 // 9
+    target_height = 720
+    target_width = 1280
     
-    if target_width < width:
-        target_width = width
-        target_height = width * 9 // 16
-
     # Prepare video filters
-    vf_filters = [f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2']
+    vf_filters = []
+
+    # Resize to 720p if original is larger
+    if height > 720:
+        vf_filters.append(f'scale=-1:720')
+    else:
+        target_height = height
+        target_width = width
+
+    # Add padding if necessary
+    if target_width != width or target_height != height:
+        vf_filters.append(f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2')
 
     # Add FPS filter if necessary
     if fps > 30:
