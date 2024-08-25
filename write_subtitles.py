@@ -9,7 +9,6 @@ def add_subtitles_to_video(video_file, subtitle_file, output_file):
         '-i', video_file,
         '-vf', f'subtitles={subtitle_file}',
         '-c:v', 'h264_nvenc',
-        '-preset', 'fast',  # Use a faster encoding preset
         '-maxrate', '1M',  # Lower maximum bitrate
         '-c:a', 'copy',
         '-y',  # Overwrite output file without asking
