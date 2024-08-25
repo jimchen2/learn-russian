@@ -1,3 +1,7 @@
+## First run a dummy to download the weights
+
+## 4 threads is a good utilization of GPU
+
 ## Configure `.env`
 
 See `~/.config/rclone/rclone.conf`

@@ -7,10 +7,7 @@ def add_subtitles_to_video(video_file, subtitle_file, output_file):
         '-hwaccel', 'cuda',  # Use CUDA hardware acceleration
         '-i', video_file,
         '-vf', f'subtitles={subtitle_file}',
-        '-c:v', 'h264_nvenc',  # Use NVIDIA GPU encoding for output
         '-c:a', 'copy',
-        '-threads', '0',  # Use all available CPU threads
-        '-preset', 'fast',  # Use a faster encoding preset
         output_file
     ]
     subprocess.run(command, check=True)

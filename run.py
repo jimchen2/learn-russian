@@ -89,7 +89,6 @@ def process_and_upload_video(url):
             # Step 6: Upload to S3
             print(subtitled_video)
             upload_to_s3(subtitled_video)
-            print(f"Successfully uploaded: {original_filename}")
         
         # Clean up temporary files
         if os.path.exists(mp4_video):
@@ -101,8 +100,10 @@ def process_and_upload_video(url):
         if os.path.exists(subtitled_video):
             os.remove(subtitled_video)
         
+        return None  # No error occurred
     except Exception as e:
         print(f"Error processing and uploading {url}: {e}")
+        return url  # Return the URL that caused an error
     finally:
         # Ensure downloaded_video is always removed, even if an exception occurs
         if 'downloaded_video' in locals() and os.path.exists(downloaded_video):
@@ -116,8 +117,21 @@ def main():
     urls_file = 'video_urls.txt'  # Name of the file containing video URLs
     video_urls = read_urls_from_file(urls_file)
     
+    error_urls = []
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        executor.map(process_and_upload_video, video_urls)
+        results = executor.map(process_and_upload_video, video_urls)
+        for result in results:
+            if result:  # If a URL is returned, it means an error occurred
+                error_urls.append(result)
+    
+    # Write error URLs to a file
+    if error_urls:
+        with open('error_urls.txt', 'w') as f:
+            for url in error_urls:
+                f.write(f"{url}\n")
+        print(f"URLs with errors have been written to error_urls.txt")
+    else:
+        print("All URLs processed successfully")
 
 if __name__ == "__main__":
     main()
