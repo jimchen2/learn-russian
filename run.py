@@ -62,66 +62,62 @@ def download_video(url):
         return None    
     
 def transcode_to_mp4(input_file):
-    # Check if the input file is already an MP4
     if input_file.lower().endswith('.mp4'):
         print(f"File {input_file} is already an MP4. Skipping transcoding.")
         return input_file
 
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
 
-    # Get video information
-    probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
-                                     '-count_packets', '-show_entries', 'stream=width,height,r_frame_rate', 
-                                     '-of', 'csv=p=0', input_file]).decode('utf-8').strip().split(',')
-    width, height, fps = probe
-    width, height = map(int, (width, height))
-    fps = eval(fps)  # r_frame_rate is returned as a fraction, e.g., '30000/1001'
+    try:
+        probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
+                                         '-count_packets', '-show_entries', 'stream=width,height,r_frame_rate', 
+                                         '-of', 'csv=p=0', input_file]).decode('utf-8').strip().split(',')
+        width, height, fps = probe
+        width, height = map(int, (width, height))
+        fps = eval(fps)  # r_frame_rate is returned as a fraction, e.g., '30000/1001'
+    except subprocess.CalledProcessError:
+        print(f"Error: Unable to probe {input_file}")
+        return input_file
 
-    # Calculate target dimensions
-    target_height = 720
-    target_width = 1280
-    
-    # Prepare video filters
     vf_filters = []
 
     # Resize to 720p if original is larger
     if height > 720:
         vf_filters.append(f'scale=-1:720')
-    else:
-        target_height = height
-        target_width = width
 
-    # Add padding if necessary
-    if target_width != width or target_height != height:
-        vf_filters.append(f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2')
-
-    # Add FPS filter if necessary
+    # Reduce frame rate if higher than 30 fps
     if fps > 30:
         vf_filters.append('fps=30')
 
-    # Join all filters
     vf_string = ','.join(vf_filters)
 
-    # Construct FFmpeg command
     command = [
         'ffmpeg',
-        '-hwaccel', 'cuda',  # Use CUDA hardware acceleration
+        '-hwaccel', 'cuda',
         '-i', input_file,
-        '-vf', vf_string,
-        '-c:v', 'h264_nvenc',  # Use NVIDIA NVENC encoder
-        '-preset', 'p4',  # Fastest preset for NVENC
-        '-tune', 'hq',  # High quality tuning
-        '-b:v', '5M',  # Set a target bitrate (adjust as needed)
-        '-maxrate', '10M',  # Maximum bitrate
-        '-bufsize', '15M',  # VBV buffer size
-        '-c:a', 'copy',  # Copy audio without re-encoding
-        output_file
+        '-c:v', 'h264_nvenc',
+        '-preset', 'p4',
+        '-tune', 'hq',
+        '-b:v', '5M',
+        '-maxrate', '10M',
+        '-bufsize', '15M',
+        '-c:a', 'aac',
+        '-b:a', '128k'
     ]
-    
-    subprocess.run(command)
-    os.remove(input_file)
-    print(f"Transcoded to {output_file}")
-    return output_file
+
+    if vf_filters:
+        command.extend(['-vf', vf_string])
+
+    command.append(output_file)
+
+    try:
+        subprocess.run(command, check=True)
+        os.remove(input_file)
+        print(f"Transcoded to {output_file}")
+        return output_file
+    except subprocess.CalledProcessError as e:
+        print(f"Error transcoding {input_file}: {e}")
+        return input_file
 
 def process_and_upload_video(url):
     try:
