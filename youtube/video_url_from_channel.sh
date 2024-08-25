@@ -41,6 +41,6 @@ sed 's_^_https://youtu.be/_'
 
 # views over 50k and length more than 5 mins
 yt-dlp -j --flat-playlist "https://www.youtube.com/@anthropic-ai" | 
-jq -r 'select(.view_count != null and .view_count > 500000 and .duration != null and .duration > 300) | "\(.view_count) https://youtu.be/\(.id)"' | 
+jq -r 'select(.view_count != null and .view_count > 50000 and .duration != null and .duration > 300) | "\(.view_count) https://youtu.be/\(.id)"' | 
 sort -rn | 
 cut -d' ' -f2-
