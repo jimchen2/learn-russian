@@ -49,10 +49,14 @@ def transcode_to_mp4(input_file):
         return input_file
 
     output_file = f"{os.path.splitext(input_file)[0]}.mp4"
+
+    # Get video information
     probe = subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
-                                     '-count_packets', '-show_entries', 'stream=width,height', 
+                                     '-count_packets', '-show_entries', 'stream=width,height,r_frame_rate', 
                                      '-of', 'csv=p=0', input_file]).decode('utf-8').strip().split(',')
-    width, height = map(int, probe)
+    width, height, fps = probe
+    width, height = map(int, (width, height))
+    fps = eval(fps)  # r_frame_rate is returned as a fraction, e.g., '30000/1001'
 
     # Calculate target dimensions
     target_height = height
@@ -62,12 +66,22 @@ def transcode_to_mp4(input_file):
         target_width = width
         target_height = width * 9 // 16
 
+    # Prepare video filters
+    vf_filters = [f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2']
+
+    # Add FPS filter if necessary
+    if fps > 30:
+        vf_filters.append('fps=30')
+
+    # Join all filters
+    vf_string = ','.join(vf_filters)
+
     # Construct FFmpeg command
     command = [
         'ffmpeg',
         '-hwaccel', 'cuda',  # Use CUDA hardware acceleration
         '-i', input_file,
-        '-vf', f'pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2',
+        '-vf', vf_string,
         '-c:v', 'h264_nvenc',  # Use NVIDIA NVENC encoder
         '-preset', 'p4',  # Fastest preset for NVENC
         '-tune', 'hq',  # High quality tuning
