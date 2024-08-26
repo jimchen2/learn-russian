@@ -8,7 +8,7 @@ def add_subtitles_to_video(video_file, subtitle_file, output_file):
         '-threads', '16',  # Limit to 16 threads as suggested in the error message
         '-i', video_file,
         '-vf', f'subtitles={subtitle_file}',
-        '-c:v', 'h264_nvenc',
+        '-c:v', 'libx264',
         '-maxrate', '1M',  # Lower maximum bitrate
         '-c:a', 'copy',
         '-y',  # Overwrite output file without asking

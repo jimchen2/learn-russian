@@ -95,7 +95,7 @@ def transcode_to_mp4(input_file):
         'ffmpeg',
         '-hwaccel', 'cuda',
         '-i', input_file,
-        '-c:v', 'h264_nvenc',
+        '-c:v', 'libx264',
         '-c:a', 'aac',
         '-b:a', '128k'
     ]
