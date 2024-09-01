@@ -1,0 +1,1 @@
+sed '/^$/!s|^|https://youtu.be/|' video_ids.txt > restored_output.txt

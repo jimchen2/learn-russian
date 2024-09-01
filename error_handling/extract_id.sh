@@ -1,0 +1,1 @@
+sed 's|https://youtu.be/||' output | sed 's|^youtu.be/||' > video_ids.txt
