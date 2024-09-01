@@ -1,1 +1,1 @@
-sed 's|https://youtu.be/||' output | sed 's|^youtu.be/||' > video_ids.txt
+sed -E 's@^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)@@' output > video_ids.txt
