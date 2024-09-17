@@ -1,5 +1,7 @@
 *I am going to hoard only annually, so the next time I am expected to hoard at February next year.*
 
+*Also next time I hoard I will archive some videos to another bucket, sort of like creating a buffer space*
+
 ## 2024.09.18
 
 - Total size: 415.520 GiB (446161095352 Byte)
