@@ -4,7 +4,7 @@ import argparse
 from urllib.parse import quote
 from concurrent.futures import ThreadPoolExecutor
 
-BASE_URL = "https://pub-b64e8549cb8d40a082e1f6f1afd4cb58.r2.dev"
+BASE_URL = "https://pub-cae0cd861a9544cf889d3f0bf1529aab.r2.dev"
 
 def run_cmd(cmd):
     return subprocess.run(cmd, capture_output=True, text=True).stdout
