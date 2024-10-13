@@ -1,6 +1,14 @@
-*I am going to hoard only annually, so the next time I am expected to hoard at February next year.*
+_Not Maintained, Change needed_
 
-*Also next time I hoard I will archive some videos to another bucket, sort of like creating a buffer space*
+_Hoarding YouTube on Google Colab is allowed_
+
+_I am only hoarding educational videos now and relying on YouTube for other videos_
+
+## 2024.10.13
+
+Public Bucket
+
+- Total size: 340.549 GiB (365661485057 Byte)
 
 ## 2024.09.18
 
@@ -24,12 +32,10 @@ Public Bucket
 - Total duration: 1471226.817983 seconds (408 hours)
 
 This is the first time I hoarded.
- 
-*Incident: I configured Cloudflare to delete object after one day, which fucked everything up.*
 
-## ToDo
+_Incident: I configured Cloudflare to delete object after one day, which fucked everything up._
 
-Support Multi-GPU
+## Run
 
 1. First run a dummy to download the weights
 
