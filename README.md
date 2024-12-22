@@ -63,10 +63,10 @@ pip install yt-dlp boto3 uuid python-dotenv openai-whisper
 
 source ~/myenv/bin/activate
 cd ~
-git clone https://github.com/jimchen2/whisper-video-s3
+git clone https://github.com/jimchen2/language-learning
 
 
-cd ~/whisper-video-s3
+cd ~/language-learning/transcribetos3
 python run.py -t 1
 
 ## Installing ffmpeg

@@ -1,0 +1,3 @@
+- [Frequency List](https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/Russian/Mixed_web)
+- [English Dictionary](https://archive.org/details/92.RussianLearnersDictionary10000WordsInFrequencyOrder)
+- [Russian Dictionary PDF](https://archive.org/details/slovar_202412), [html](https://archive.org/details/slovar_20241213), [txt](https://archive.org/details/generated_dictionary)
